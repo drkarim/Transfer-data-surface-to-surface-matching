@@ -8,3 +8,4 @@ INCLUDE(${VTK_USE_FILE})
 ADD_EXECUTABLE(TransferPointScalar main.cpp)
 TARGET_LINK_LIBRARIES(TransferPointScalar ${VTK_LIBRARIES})
 
+INSTALL(TARGETS TransferPointScalar DESTINATION /usr/local/lib/rk_kcl_tools)

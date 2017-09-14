@@ -21,6 +21,24 @@
 
 using namespace std;
 
+// Prints the stats for how many points were plotted 
+void PrintHitFrequency(int* hit_frequency, int length)
+{
+	ofstream out; 
+	out.open("hit_frequency.txt"); 
+	out << "Point ID\t\tFrequency" << endl; 
+	out << "========\t\t=========" << endl;
+	for (int pointID=0;pointID<length;pointID++)
+	{
+		if (hit_frequency[pointID] > 0)
+			out << pointID << "\t\t" << hit_frequency[pointID] << endl;
+	}
+
+	out.close(); 
+}
+
+
+
 /*
 *	poly_s - polydata with scalars
 *	poly_ns - polydata with no scalars
@@ -43,17 +61,29 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 	for (int i=0;i<poly_s->GetNumberOfPoints();i++){
 		poly_ns_scalars->InsertNextTuple1(-1); 
 	}
+
+	int* hit_frequency = new int[poly_s->GetNumberOfPoints()];
+
+	// record hit frequency 
+	for (int i=0;i<poly_s->GetNumberOfPoints();i++)
+	{
+		hit_frequency[i] = 0; 
+	}
+
 	//cout << "Finished reading scalars, now transferring .. " << endl;
 	for (int i=0;i<poly_ns->GetNumberOfPoints();i++) 
 	{	
 		poly_ns->GetPoint(i, xyz);
-	
+
+		
 
 		if (!isDirectCopy) {
 			closestPointID = point_locator->FindClosestPoint(xyz); 
 			
 			if (closestPointID != -1) {
 				scalar = poly_s->GetPointData()->GetScalars()->GetTuple1(closestPointID);
+				hit_frequency[closestPointID]++; 
+
 				poly_ns_scalars->SetTuple1(i, scalar);
 			}
 		}
@@ -65,9 +95,10 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 	}
 
 	poly_ns->GetPointData()->SetScalars(poly_ns_scalars);
+
+	PrintHitFrequency(hit_frequency, poly_s->GetNumberOfPoints());
 	
 }
-
 
 
 int main(int argc, char *argv[])
@@ -76,7 +107,7 @@ int main(int argc, char *argv[])
 	std::string fn1, fn2, fn3; 
 	if (argc < 6)
 	{
-		std::cerr << "Required parameters: \n\t-i1 vtk_scalar \n\t-i2 vtk_no_scalar \n\t-o vtk_no_scalar_new \n\t--directcopy xx (optional)" << std::endl;
+		std::cerr << "Required parameters: \n\t-i1 source \n\t-i2 target \n\t-o output \n\t--directcopy xx (optional)" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -130,7 +161,7 @@ int main(int argc, char *argv[])
 	
 	TransferScalars(poly_with_scalar, poly_no_scalar, isDirectCopy);
 
-
+	
 	vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
 	writer->SetInputData(poly_no_scalar);
 	writer->SetFileName(fn3.c_str());
