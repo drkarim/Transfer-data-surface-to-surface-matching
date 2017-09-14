@@ -25,14 +25,32 @@ using namespace std;
 void PrintHitFrequency(int* hit_frequency, int length)
 {
 	ofstream out; 
-	out.open("hit_frequency.txt"); 
-	out << "Point ID\t\tFrequency" << endl; 
-	out << "========\t\t=========" << endl;
+
+	stringstream ss; 
+	double points_hit = 0, points_hit_5=0, percent_hit=0; 
+
+	out.open("hit_frequency.csv"); 
+	
 	for (int pointID=0;pointID<length;pointID++)
 	{
-		if (hit_frequency[pointID] > 0)
-			out << pointID << "\t\t" << hit_frequency[pointID] << endl;
+		if (hit_frequency[pointID] > 0) {
+			ss << pointID << "," << hit_frequency[pointID] << endl;
+			points_hit++; 
+
+			if (hit_frequency[pointID] > 5)
+				points_hit_5++; 
+		}
 	}
+
+	percent_hit = 100*(points_hit/(double)length); 
+	
+	out << "Stats\n=======\n\n" << "Percent points carried over," << percent_hit << endl; 
+	out << "Points total," <<  points_hit << endl; 
+	out << "Points with more than 5 hits," << points_hit_5 << endl << endl;
+
+	out << "Point ID,Frequency" << endl; 
+	out << "========,=========" << endl;
+	out << ss.rdbuf() << endl;
 
 	out.close(); 
 }
