@@ -55,14 +55,38 @@ void PrintHitFrequency(int* hit_frequency, int length)
 	out.close(); 
 }
 
+void ICPRegistration(vtkPolyData* source, vtkPolyData* target, vtkPolyData* result)
+{
+	vtkSmartPointer<vtkIterativeClosestPointTransform> icp = vtkSmartPointer<vtkIterativeClosestPointTransform>::New();
+	icp->SetSource(source);
+	icp->SetTarget(target);
+	icp->GetLandmarkTransform()->SetModeToAffine();
+	icp->SetMaximumNumberOfIterations(1000);
+	//icp->StartByMatchingCentroidsOn();
+	icp->Modified();
+	icp->Update();
+	vtkSmartPointer<vtkMatrix4x4> m = icp->GetMatrix();
+	std::cout << "The resulting matrix after ICP is: " << *m << std::endl;
 
+	vtkSmartPointer<vtkTransformPolyDataFilter> icpFilter = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+	icpFilter->SetInputData(source);
+	icpFilter->SetTransform(icp);
+	icpFilter->Update();
+	result = icpFilter->GetOutput();
+
+	// debug 
+	vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
+	writer->SetInputData(result);
+	writer->SetFileName("post_icp.vtk");
+	writer->Update();
+}
 
 /*
-*	poly_s - polydata with scalars
-*	poly_ns - polydata with no scalars
+*	poly_s - polydata with scalars (i.e. source)
+*	poly_ns - polydata with no scalars (i.e. target)
 *	poly_o - polydata output
 */
-void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCopy) {
+void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCopy, bool isICP) {
 	
 	double scalar; 
 	double xyz[3];
@@ -86,6 +110,13 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 	for (int i=0;i<poly_s->GetNumberOfPoints();i++)
 	{
 		hit_frequency[i] = 0; 
+	}
+
+	if (isICP == true)
+	{
+		vtkPolyData* result = vtkPolyData::New(); 
+		ICPRegistration(poly_s, poly_ns, result);
+		poly_s->DeepCopy(result);
 	}
 
 	//cout << "Finished reading scalars, now transferring .. " << endl;
@@ -121,11 +152,12 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 
 int main(int argc, char *argv[])
 {
-	bool isDirectCopy = false, foundArgs1=false;
+	bool isDirectCopy = false, foundArgs1=false, isICP=false;
 	std::string fn1, fn2, fn3; 
 	if (argc < 6)
 	{
-		std::cerr << "Required parameters: \n\t-i1 source \n\t-i2 target \n\t-o output \n\t--directcopy xx (optional)" << std::endl;
+		std::cerr << "Required parameters: \n\t-i1 source \n\t-i2 target \n\t-o output \n\t--directcopy xx (optional)\n\t--icp x (does not work)\n\n"
+		"Note two things: ICP option does not work yet, and both surfaces should have exact same number of points" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -148,11 +180,19 @@ int main(int argc, char *argv[])
 			}
 			if (string(argv[i]) == "--directcopy") {
 				isDirectCopy = true;
-				
+			}
+
+			if (string(argv[i]) == "--icp") {
+				isICP = true;
 			}
 		}
 	}
 
+	if (isDirectCopy == false && isICP == false)
+	{
+		cerr << "Missing --directcopy or --icp switch to indicate which method to use. The program will exit now" << endl; 
+		exit(0); 
+	}
 	
 	vtkSmartPointer<vtkPolyDataReader> reader1 = vtkSmartPointer<vtkPolyDataReader>::New();
 	reader1->SetFileName(fn1.c_str());
@@ -176,10 +216,8 @@ int main(int argc, char *argv[])
 	// Note that the SetInstance function is a static member of vtkOutputWindow.
 	vtkOutputWindow::SetInstance(fileOutputWindow);
 
-	
-	TransferScalars(poly_with_scalar, poly_no_scalar, isDirectCopy);
+	TransferScalars(poly_with_scalar, poly_no_scalar, isDirectCopy, isICP);
 
-	
 	vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
 	writer->SetInputData(poly_no_scalar);
 	writer->SetFileName(fn3.c_str());
