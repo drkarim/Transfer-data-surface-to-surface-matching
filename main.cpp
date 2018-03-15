@@ -85,8 +85,9 @@ void ICPRegistration(vtkPolyData* source, vtkPolyData* target, vtkPolyData* resu
 *	poly_s - polydata with scalars (i.e. source)
 *	poly_ns - polydata with no scalars (i.e. target)
 *	poly_o - polydata output
+* 	copy_method = 1 (index copy), 2 (nearest neighbour), 3 (ICP method)
 */
-void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCopy, bool isICP) {
+void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, int copy_method) {
 	
 	double scalar; 
 	double xyz[3];
@@ -100,7 +101,8 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 	//vtkSmartPointer<vtkFloatArray> poly_s_scalars = vtkFloatArray::SafeDownCast(poly_s->GetPointData()->GetScalars());
 	vtkSmartPointer<vtkFloatArray> poly_ns_scalars = vtkSmartPointer<vtkFloatArray>::New(); 
 
-	for (int i=0;i<poly_s->GetNumberOfPoints();i++){
+	
+	for (int i=0;i<poly_ns->GetNumberOfPoints();i++){
 		poly_ns_scalars->InsertNextTuple1(-1); 
 	}
 
@@ -112,7 +114,7 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 		hit_frequency[i] = 0; 
 	}
 
-	if (isICP == true)
+	if (copy_method == 3)
 	{
 		vtkPolyData* result = vtkPolyData::New(); 
 		ICPRegistration(poly_s, poly_ns, result);
@@ -126,18 +128,19 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 
 		
 
-		if (!isDirectCopy) {
+		if (copy_method == 2) {		/*	nearest neighbour		*/ 
 			closestPointID = point_locator->FindClosestPoint(xyz); 
 			
 			if (closestPointID != -1) {
 				scalar = poly_s->GetPointData()->GetScalars()->GetTuple1(closestPointID);
+				cout << scalar << endl;
 				hit_frequency[closestPointID]++; 
 
 				poly_ns_scalars->SetTuple1(i, scalar);
 			}
 		}
 		
-		else {
+		else if (copy_method == 1){		/*	index copy, expects equal number of points on source and target		*/
 			scalar = poly_s->GetPointData()->GetScalars()->GetTuple1(i);
 			poly_ns_scalars->SetTuple1(i, scalar); 
 		}
@@ -152,12 +155,17 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, bool isDirectCop
 
 int main(int argc, char *argv[])
 {
-	bool isDirectCopy = false, foundArgs1=false, isICP=false;
+	bool isIndexCopy=false, isClosestNeighbourCopy = false, foundArgs1=false, isICP=false, isUnequal=false;
 	std::string fn1, fn2, fn3; 
 	if (argc < 6)
 	{
-		std::cerr << "Required parameters: \n\t-i1 source \n\t-i2 target \n\t-o output \n\t--directcopy \n\t--icp (does not work)\n\n"
-		"Note two things: ICP option does not work yet, and both surfaces should have exact same number of points" << std::endl;
+		std::cerr << "Required parameters: \n\t-source source \n\t-target target \n\t-o output"
+		"\n\t--nn (use nearest neighbour)\n\t--index (use vertex index to copy) \n\t--icp (does not work)\n\n"
+		"Useful notes:\n\tData is copied from source to target"
+		"\n\tThe --nn does not require same number of vertices between source and target"
+		"\n\tICP option does not work yet" 
+		"\n\tUse NN when both surfaces dont have equal number of points. "
+		"\n\tNote this method assumes that the surfaces are aligned approximately and data can be copied over reliably from one to the other" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -165,11 +173,11 @@ int main(int argc, char *argv[])
 	{
 		for (int i = 1; i < argc; i++) {
 			if (i + 1 != argc) {
-				if (string(argv[i]) == "-i1") {
+				if (string(argv[i]) == "-source") {
 					fn1 = argv[i + 1];
 					foundArgs1 = true;
 				}
-				else if (string(argv[i]) == "-i2") {
+				else if (string(argv[i]) == "-target") {
 					fn2 = argv[i + 1];
 					foundArgs1 = true;
 				}
@@ -178,19 +186,23 @@ int main(int argc, char *argv[])
 					foundArgs1 = true;
 				}
 			}
-			if (string(argv[i]) == "--directcopy") {
-				isDirectCopy = true;
+			if (string(argv[i]) == "--index") {
+				isIndexCopy = true;
+			}
+			else if (string(argv[i]) == "--nn") {
+				isClosestNeighbourCopy = true;
 			}
 
-			if (string(argv[i]) == "--icp") {
+			else if (string(argv[i]) == "--icp") {
 				isICP = true;
 			}
+			
 		}
 	}
 
-	if (isDirectCopy == false && isICP == false)
+	if (isIndexCopy == false && isClosestNeighbourCopy == false && isICP == true)
 	{
-		cerr << "Missing --directcopy or --icp switch to indicate which method to use. The program will exit now" << endl; 
+		cerr << "Missing --index, --nn, --icp switches to indicate which method to use. The program will exit now" << endl; 
 		exit(0); 
 	}
 	
@@ -216,7 +228,16 @@ int main(int argc, char *argv[])
 	// Note that the SetInstance function is a static member of vtkOutputWindow.
 	vtkOutputWindow::SetInstance(fileOutputWindow);
 
-	TransferScalars(poly_with_scalar, poly_no_scalar, isDirectCopy, isICP);
+
+	int copy_method = -1; 
+	if (isIndexCopy)
+		copy_method = 1; 
+	else if (isClosestNeighbourCopy)
+		copy_method = 2; 
+	else if (isICP)
+		copy_method = 3; 
+
+	TransferScalars(poly_with_scalar, poly_no_scalar, copy_method);
 
 	vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New();
 	writer->SetInputData(poly_no_scalar);
