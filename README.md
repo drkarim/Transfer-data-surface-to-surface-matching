@@ -31,6 +31,7 @@ I have tried to list some important points to consider before using this techniq
 * ICP option does not work yet
 * Use NN when both surfaces dont have equal number of points. 
 * Note this method assumes that the surfaces are aligned approximately and data can be copied over reliably from one to the other
+* In nearest neighbour search, if a nearest neighbour is not found due to any reason, a scalar value of 0 is copied over
 
 
 ## Author 

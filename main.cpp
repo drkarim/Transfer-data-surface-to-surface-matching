@@ -127,17 +127,19 @@ void TransferScalars(vtkPolyData* poly_s, vtkPolyData* poly_ns, int copy_method)
 		poly_ns->GetPoint(i, xyz);
 
 		
-
 		if (copy_method == 2) {		/*	nearest neighbour		*/ 
 			closestPointID = point_locator->FindClosestPoint(xyz); 
 			
 			if (closestPointID != -1) {
-				scalar = poly_s->GetPointData()->GetScalars()->GetTuple1(closestPointID);
-				cout << scalar << endl;
+				scalar = poly_s->GetPointData()->GetScalars()->GetTuple1(closestPointID);				
 				hit_frequency[closestPointID]++; 
-
-				poly_ns_scalars->SetTuple1(i, scalar);
 			}
+			else 
+			{
+				scalar = 0 ;
+			}
+			//cout << scalar << endl;
+			poly_ns_scalars->SetTuple1(i, scalar);
 		}
 		
 		else if (copy_method == 1){		/*	index copy, expects equal number of points on source and target		*/
