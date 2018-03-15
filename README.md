@@ -9,7 +9,7 @@ For copying the scalar data, it currently only has two options:
 
 Note that data is copied from source to target. Also, note that the ICP option ```--icp``` does not work and it has bugs 
 
-# Usage 
+## Usage 
 
 ```
 Required parameters: 
@@ -22,7 +22,7 @@ Required parameters:
 
 ```
 
-# Considerations 
+## Considerations 
 
 I have tried to list some important points to consider before using this technique: 
 
@@ -33,7 +33,7 @@ I have tried to list some important points to consider before using this techniq
 * Note this method assumes that the surfaces are aligned approximately and data can be copied over reliably from one to the other
 
 
-# Author 
+## Author 
 
 ```
 Dr. Rashed Karim 
