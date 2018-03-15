@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 	std::string fn1, fn2, fn3; 
 	if (argc < 6)
 	{
-		std::cerr << "Required parameters: \n\t-i1 source \n\t-i2 target \n\t-o output \n\t--directcopy xx (optional)\n\t--icp x (does not work)\n\n"
+		std::cerr << "Required parameters: \n\t-i1 source \n\t-i2 target \n\t-o output \n\t--directcopy \n\t--icp (does not work)\n\n"
 		"Note two things: ICP option does not work yet, and both surfaces should have exact same number of points" << std::endl;
 		return EXIT_FAILURE;
 	}
