@@ -27,11 +27,11 @@ Required parameters:
 I have tried to list some important points to consider before using this technique: 
 
 <p>
- 	- Data is copied from source to target
-	- The --nn does not require same number of vertices between source and target
-	- ICP option does not work yet
-	- Use NN when both surfaces dont have equal number of points. 
-	- Note this method assumes that the surfaces are aligned approximately and data can be copied over reliably from one to the other
+ 	* Data is copied from source to target
+	* The --nn does not require same number of vertices between source and target
+	* ICP option does not work yet
+	* Use NN when both surfaces dont have equal number of points. 
+	* Note this method assumes that the surfaces are aligned approximately and data can be copied over reliably from one to the other
 </p>
 
 # Author 
