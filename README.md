@@ -4,8 +4,8 @@ A VTK utility program that will copy point data scalars between two VTK surface 
 
 For copying the scalar data, it currently only has two options: 
 
-- Vertex index copy using vertex point IDs. Ensure source and target have equal vertices
-- Nearest neighbour. Copies from the nearest vertex on source. Source and target dont need to have equal number of vertices
+- Vertex index copy ```--index``` using vertex point IDs. Ensure source and target have equal vertices
+- Nearest neighbour ```--nn``` copies from the nearest vertex on source. Source and target dont need to have equal number of vertices
 
 Note that data is copied from source to target. Also, note that the ICP option ```--icp``` does not work and it has bugs 
 
@@ -27,7 +27,8 @@ Required parameters:
 I have tried to list some important points to consider before using this technique: 
 
 * Data is copied from source to target
-* The --nn does not require same number of vertices between source and target
+* The ```--nn``` does not require same number of vertices between source and target
+* The ```--index``` copies based on vertex indices or point IDs. Ensure that both target and source have same number of vertices
 * ICP option does not work yet
 * Use NN when both surfaces dont have equal number of points. 
 * Note this method assumes that the surfaces are aligned approximately and data can be copied over reliably from one to the other
